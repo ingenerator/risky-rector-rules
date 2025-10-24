@@ -1,4 +1,29 @@
 {
+  "name": "ingenerator/risky-rector-rules",
+  "description": "A selection of Rector refactoring rules that should be used with caution",
+  "homepage": "https://github.com/ingenerator/risky-rector-rules",
+  "license": "BSD-3-Clause",
+  "keywords": [
+    "rector",
+    "refactoring"
+  ],
+  "authors": [
+    {
+      "name": "Andrew Coulton",
+      "homepage": "https://github.com/acoulton",
+      "role": "developer / maintainer"
+    }
+  ],
+  "support": {
+    "issues":   "https://github.com/ingenerator/risky-rector-rules/issues",
+    "source":   "https://github.com/ingenerator/risky-rector-rules"
+  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/acoulton"
+    }
+  ],
   "require": {
     "php": ">=8.4 <8.5",
     "rector/rector": "^2.2"
