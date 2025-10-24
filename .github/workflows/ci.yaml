@@ -1,0 +1,51 @@
+name: CI
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php_version:
+          - '8.4'
+        dependency-versions:
+          - 'default'
+          - 'lowest'
+
+    steps:
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php_version }}
+          tools: composer:v2
+          ini-file: 'development'
+
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+
+      - uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: ${{ matrix.dependency-versions }}
+
+      - run: vendor/bin/phpunit
+
+  coding-standard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          ini-values: "zend.exception_ignore_args=Off"
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install
+
+      - run: vendor/bin/php-cs-fixer fix --dry-run --verbose --diff
+
+      - run: vendor/bin/rector process
