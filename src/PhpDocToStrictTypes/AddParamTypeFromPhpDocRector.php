@@ -16,17 +16,16 @@ use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
-use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\VerbosityLevel;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\DeadCode\PhpDoc\TagRemover\ParamTagRemover;
-use Rector\FamilyTree\NodeAnalyzer\ClassChildAnalyzer;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Rector\AbstractRector;
-use Rector\Reflection\ReflectionResolver;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+
+use function assert;
 
 use const false;
 use const true;
@@ -36,10 +35,7 @@ use const true;
  */
 final class AddParamTypeFromPhpDocRector extends AbstractRector
 {
-    private bool $hasChanged = false;
-
     public function __construct(
-        private readonly ReflectionResolver $reflectionResolver,
         private readonly ParamTagRemover $paramTagRemover,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
     ) {
@@ -72,30 +68,19 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
         ]);
     }
 
-    /**
-     * @return array<class-string<Node>>
-     */
     public function getNodeTypes(): array
     {
         return [ClassMethod::class];
     }
 
-    /**
-     * @param ClassMethod $node
-     *                          The class method node
-     */
     public function refactor(Node $node): ?Node
     {
-        if ($node instanceof ClassMethod && $this->shouldSkipClassMethod($node)) {
-            return null;
-        }
-        $this->hasChanged = false;
+        assert($node instanceof ClassMethod);
+
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
-        $this->refactorParamTypes($node, $phpDocInfo);
-        $hasChanged = $this->paramTagRemover->removeParamTagsIfUseless($phpDocInfo, $node);
-        if ($this->hasChanged) {
-            return $node;
-        }
+        $hasChanged = $this->refactorParamTypes($node, $phpDocInfo);
+        $hasChanged = $this->paramTagRemover->removeParamTagsIfUseless($phpDocInfo, $node) || $hasChanged;
+
         if ($hasChanged) {
             return $node;
         }
@@ -103,28 +88,9 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
         return null;
     }
 
-    private function shouldSkipClassMethod(ClassMethod $classMethod): bool
+    private function refactorParamTypes(ClassMethod $classMethod, PhpDocInfo $phpDocInfo): bool
     {
-        $classReflection = $this->reflectionResolver->resolveClassReflection($classMethod);
-        if ( ! $classReflection instanceof ClassReflection) {
-            return false;
-        }
-        if ( ! $classReflection->isInterface()) {
-            return true;
-        }
-
-        // @todo: Consider whether we should (attempt to) ignore methods that have parents
-        return false;
-    }
-
-    /**
-     * @param ClassMethod $classMethod
-     *                                 The class method node
-     * @param PhpDocInfo  $phpDocInfo
-     *                                 The PhpDocInfo utility
-     */
-    private function refactorParamTypes(Node $classMethod, PhpDocInfo $phpDocInfo): void
-    {
+        $hasChanged = false;
         foreach ($classMethod->params as $param) {
             if ($param->type instanceof Node) {
                 continue;
@@ -138,11 +104,15 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
             if ( ! $paramType->isScalar()->yes()) {
                 continue;
             }
-            $this->hasChanged = true;
+
+            $hasChanged = true;
+
             $param->type = new Identifier($paramType->describe(VerbosityLevel::getRecommendedLevelByType($paramType)));
             if ($param->flags !== 0) {
                 $param->setAttribute(AttributeKey::ORIGINAL_NODE, null);
             }
         }
+
+        return $hasChanged;
     }
 }
