@@ -16,17 +16,18 @@ use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
+use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
 use PHPStan\Type\VerbosityLevel;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\DeadCode\PhpDoc\TagRemover\ParamTagRemover;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Rector\AbstractRector;
+use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
 use function assert;
-
 use const false;
 use const true;
 
@@ -38,7 +39,8 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
     public function __construct(
         private readonly ParamTagRemover $paramTagRemover,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
-    ) {
+    )
+    {
     }
 
     public function getRuleDefinition(): RuleDefinition
@@ -93,26 +95,45 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
         $hasChanged = false;
         foreach ($classMethod->params as $param) {
             if ($param->type instanceof Node) {
+                // Already has a strict type assigned, ignore the phpdoc
                 continue;
             }
             $paramName = (string) $this->getName($param->var);
-            $paramTagValue = $phpDocInfo->getParamTagValueByName($paramName);
-            if ( ! $paramTagValue instanceof ParamTagValueNode) {
+
+            if (!$phpDocInfo->getParamTagValueByName($paramName) instanceof ParamTagValueNode) {
+                // They have not explicitly provided a phpdoc param type for this
                 continue;
             }
-            $paramType = $phpDocInfo->getParamType($paramName);
-            if ( ! $paramType->isScalar()->yes()) {
+
+            $strictType = $this->buildStrictTypeFromParamType($phpDocInfo->getParamType($paramName));
+            if ($strictType === null) {
+                // We can't safely convert the phpdoc to a strict type
                 continue;
             }
 
             $hasChanged = true;
+            $param->type = $strictType;
 
-            $param->type = new Identifier($paramType->describe(VerbosityLevel::getRecommendedLevelByType($paramType)));
             if ($param->flags !== 0) {
                 $param->setAttribute(AttributeKey::ORIGINAL_NODE, null);
             }
         }
 
         return $hasChanged;
+    }
+
+    private function buildStrictTypeFromParamType(Type $phpDocType): ?Node
+    {
+        if ($phpDocType instanceof ShortenedObjectType) {
+            // Requires special handling to make sure that the type is added correctly *and* the phpdoc is correctly removed
+            return new Node\Name\FullyQualified($phpDocType->getFullyQualifiedName());
+        }
+
+        if ($phpDocType instanceof ObjectType) {
+            // These need to be returned as fully-qualified names
+            return new Node\Name\FullyQualified($phpDocType->getClassName());
+        }
+
+        return new Identifier($phpDocType->describe(VerbosityLevel::getRecommendedLevelByType($phpDocType)));
     }
 }
