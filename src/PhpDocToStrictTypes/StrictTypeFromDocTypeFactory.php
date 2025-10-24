@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ingenerator\RiskyRectorRules\PhpDocToStrictTypes;
 
 use PhpParser\Node;

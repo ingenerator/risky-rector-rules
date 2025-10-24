@@ -12,6 +12,8 @@ return new Config()
     ->setParallelConfig(ParallelConfigFactory::detect())
     ->setRiskyAllowed(true)
     ->setRules([
+        '@PHP84Migration' => true,
+        '@PHP82Migration:risky' => true,
         // --- Initial set taken from Behat/Behat
         '@Symfony' => true,
         '@Symfony:risky' => true,
