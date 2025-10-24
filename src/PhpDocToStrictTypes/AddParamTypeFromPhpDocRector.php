@@ -14,6 +14,7 @@ namespace Ingenerator\RiskyRectorRules\PhpdocToStrictTypes;
 
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use PHPStan\Type\ObjectType;
@@ -27,7 +28,9 @@ use Rector\Rector\AbstractRector;
 use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+
 use function assert;
+
 use const false;
 use const true;
 
@@ -39,8 +42,7 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
     public function __construct(
         private readonly ParamTagRemover $paramTagRemover,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
-    )
-    {
+    ) {
     }
 
     public function getRuleDefinition(): RuleDefinition
@@ -52,8 +54,9 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
                     {
                         /**
                          * @param string $param
+                         * @param array{foo: string} $other
                          */
-                        public function run($param)
+                        public function run($param, $other)
                         {
                         }
                     }
@@ -61,7 +64,10 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
                 <<<'CODE_SAMPLE'
                     class SomeClass
                     {
-                        public function run(string $param)
+                        /**
+                         * @param array{foo: string} $other
+                         */
+                        public function run(string $param, array $other)
                         {
                         }
                     }
@@ -100,13 +106,13 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
             }
             $paramName = (string) $this->getName($param->var);
 
-            if (!$phpDocInfo->getParamTagValueByName($paramName) instanceof ParamTagValueNode) {
+            if ( ! $phpDocInfo->getParamTagValueByName($paramName) instanceof ParamTagValueNode) {
                 // They have not explicitly provided a phpdoc param type for this
                 continue;
             }
 
             $strictType = $this->buildStrictTypeFromParamType($phpDocInfo->getParamType($paramName));
-            if ($strictType === null) {
+            if ( ! $strictType instanceof Node) {
                 // We can't safely convert the phpdoc to a strict type
                 continue;
             }
@@ -126,14 +132,29 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
     {
         if ($phpDocType instanceof ShortenedObjectType) {
             // Requires special handling to make sure that the type is added correctly *and* the phpdoc is correctly removed
-            return new Node\Name\FullyQualified($phpDocType->getFullyQualifiedName());
+            return new FullyQualified($phpDocType->getFullyQualifiedName());
         }
 
         if ($phpDocType instanceof ObjectType) {
             // These need to be returned as fully-qualified names
-            return new Node\Name\FullyQualified($phpDocType->getClassName());
+            return new FullyQualified($phpDocType->getClassName());
         }
 
-        return new Identifier($phpDocType->describe(VerbosityLevel::getRecommendedLevelByType($phpDocType)));
+        if ($phpDocType->isArray()->yes()) {
+            // We need to drop any information about the shape / content etc of the array as this isn't valid in a strict type
+            return new Identifier('array');
+        }
+
+        if ($phpDocType->isIterable()->yes()) {
+            // Likewise drop information about `iterable`
+            return new Identifier('iterable');
+        }
+
+        if ($phpDocType->isScalar()->yes()) {
+            return new Identifier($phpDocType->describe(VerbosityLevel::getRecommendedLevelByType($phpDocType)));
+        }
+
+        // Don't know how to represent this as a strict type
+        return null;
     }
 }
