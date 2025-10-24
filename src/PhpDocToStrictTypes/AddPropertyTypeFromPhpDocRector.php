@@ -11,7 +11,6 @@ use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\DeadCode\PhpDoc\TagRemover\VarTagRemover;
 use Rector\Rector\AbstractRector;
-use RuntimeException;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
@@ -75,7 +74,12 @@ final class AddPropertyTypeFromPhpDocRector extends AbstractRector
         assert($node instanceof Property);
 
         if (count($node->props) > 1) {
-            throw new RuntimeException('tbc what this means!');
+            // Non-standard code with multiple props defined on a single `public $prop1, $prop2;` etc.
+            // It's potentially not safe to assume a `@var` tag (if present at all) covers all of them
+            // and to add strict types would be complex as we'd need to split them into separate
+            // declarations. Better to let the user fix that first (possibly with a different Rector rule?)
+            // and ignore it until they do.
+            return null;
         }
 
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
