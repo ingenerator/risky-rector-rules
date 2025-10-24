@@ -10,8 +10,9 @@ interface SomeInterface
      * @param array{foo: string, bar: string} $b
      * @param \My\Custom\Collection<\DateTimeImmutable> $c
      * @param iterable<object> $d
+     * @param string[] $e
      */
-    public function method1($a, $b, $c, $d);
+    public function method1($a, $b, $c, $d, $e);
 
 }
 
@@ -29,8 +30,9 @@ interface SomeInterface
      * @param array{foo: string, bar: string} $b
      * @param \My\Custom\Collection<\DateTimeImmutable> $c
      * @param iterable<object> $d
+     * @param string[] $e
      */
-    public function method1(array $a, array $b, \My\Custom\Collection $c, iterable $d);
+    public function method1(array $a, array $b, \My\Custom\Collection $c, iterable $d, array $e);
 
 }
 
