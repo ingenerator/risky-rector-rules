@@ -10,22 +10,16 @@
 
 declare(strict_types=1);
 
-namespace Ingenerator\RiskyRectorRules\PhpdocToStrictTypes;
+namespace Ingenerator\RiskyRectorRules\PhpDocToStrictTypes;
 
 use PhpParser\Node;
-use PhpParser\Node\Identifier;
-use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
-use PHPStan\Type\ObjectType;
-use PHPStan\Type\Type;
-use PHPStan\Type\VerbosityLevel;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\DeadCode\PhpDoc\TagRemover\ParamTagRemover;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Rector\AbstractRector;
-use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
@@ -42,6 +36,7 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
     public function __construct(
         private readonly ParamTagRemover $paramTagRemover,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
+        private readonly StrictTypeFromDocTypeFactory $typeFactory,
     ) {
     }
 
@@ -111,7 +106,7 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
                 continue;
             }
 
-            $strictType = $this->buildStrictTypeFromParamType($phpDocInfo->getParamType($paramName));
+            $strictType = $this->typeFactory->convertPhpDocType($phpDocInfo->getParamType($paramName));
             if ( ! $strictType instanceof Node) {
                 // We can't safely convert the phpdoc to a strict type
                 continue;
@@ -126,35 +121,5 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
         }
 
         return $hasChanged;
-    }
-
-    private function buildStrictTypeFromParamType(Type $phpDocType): ?Node
-    {
-        if ($phpDocType instanceof ShortenedObjectType) {
-            // Requires special handling to make sure that the type is added correctly *and* the phpdoc is correctly removed
-            return new FullyQualified($phpDocType->getFullyQualifiedName());
-        }
-
-        if ($phpDocType instanceof ObjectType) {
-            // These need to be returned as fully-qualified names
-            return new FullyQualified($phpDocType->getClassName());
-        }
-
-        if ($phpDocType->isArray()->yes()) {
-            // We need to drop any information about the shape / content etc of the array as this isn't valid in a strict type
-            return new Identifier('array');
-        }
-
-        if ($phpDocType->isIterable()->yes()) {
-            // Likewise drop information about `iterable`
-            return new Identifier('iterable');
-        }
-
-        if ($phpDocType->isScalar()->yes()) {
-            return new Identifier($phpDocType->describe(VerbosityLevel::getRecommendedLevelByType($phpDocType)));
-        }
-
-        // Don't know how to represent this as a strict type
-        return null;
     }
 }
