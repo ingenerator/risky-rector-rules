@@ -40,7 +40,6 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
 
     public function __construct(
         private readonly ReflectionResolver $reflectionResolver,
-        private readonly ClassChildAnalyzer $classChildAnalyzer,
         private readonly ParamTagRemover $paramTagRemover,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
     ) {
@@ -113,9 +112,9 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
         if ( ! $classReflection->isInterface()) {
             return true;
         }
-        $methodName = $this->nodeNameResolver->getName($classMethod);
 
-        return $this->classChildAnalyzer->hasParentClassMethod($classReflection, $methodName);
+        // @todo: Consider whether we should (attempt to) ignore methods that have parents
+        return false;
     }
 
     /**

@@ -20,7 +20,7 @@ interface SomeInterface
 }
 
 ?>
-    -----
+-----
 <?php
 
 namespace Rector\Tests\TypeDeclaration\Rector\AddParamTypeFromPhpDocRector\Fixture;
@@ -31,7 +31,6 @@ interface SomeInterface
     public function method1(string $foo, int $bar, bool $isOk);
 
     public function doSomething(string $msg, float $value);
-
 }
 
 ?>
