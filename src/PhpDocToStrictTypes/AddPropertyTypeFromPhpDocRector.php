@@ -106,7 +106,7 @@ final class AddPropertyTypeFromPhpDocRector extends AbstractRector
             return false;
         }
 
-        $strictType = $this->typeFactory->convertPhpDocType($phpDocInfo->getVarType());
+        $strictType = $this->typeFactory->convertPhpDocType($phpDocInfo->getVarType(), TypeUsageContext::PROPERTY);
         if ( ! $strictType instanceof Node) {
             // We can't convert to a strict type
             return false;

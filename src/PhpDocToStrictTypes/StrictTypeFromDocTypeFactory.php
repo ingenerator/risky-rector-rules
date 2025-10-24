@@ -12,7 +12,7 @@ use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
 
 final class StrictTypeFromDocTypeFactory
 {
-    public function convertPhpDocType(Type $phpDocType): ?Node
+    public function convertPhpDocType(Type $phpDocType, TypeUsageContext $context): ?Node
     {
         if ($phpDocType instanceof ShortenedObjectType) {
             // Requires special handling to make sure that the type is added correctly *and* the phpdoc is correctly removed
@@ -36,6 +36,10 @@ final class StrictTypeFromDocTypeFactory
 
         if ($phpDocType->isScalar()->yes()) {
             return new Identifier($phpDocType->describe(VerbosityLevel::getRecommendedLevelByType($phpDocType)));
+        }
+
+        if ($phpDocType->isVoid()->yes() && $context->allowsVoid()) {
+            return new Identifier('void');
         }
 
         // Don't know how to represent this as a strict type

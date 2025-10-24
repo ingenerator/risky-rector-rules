@@ -104,7 +104,7 @@ final class AddReturnTypeFromPhpDocRector extends AbstractRector
             return false;
         }
 
-        $strictType = $this->typeFactory->convertPhpDocType($phpDocInfo->getReturnType());
+        $strictType = $this->typeFactory->convertPhpDocType($phpDocInfo->getReturnType(), TypeUsageContext::METHOD_RETURN);
         if ( ! $strictType instanceof Node) {
             // We can't convert to a strict type
             return false;

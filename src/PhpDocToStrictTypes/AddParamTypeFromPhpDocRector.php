@@ -106,7 +106,7 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
                 continue;
             }
 
-            $strictType = $this->typeFactory->convertPhpDocType($phpDocInfo->getParamType($paramName));
+            $strictType = $this->typeFactory->convertPhpDocType($phpDocInfo->getParamType($paramName), TypeUsageContext::METHOD_PARAM);
             if ( ! $strictType instanceof Node) {
                 // We can't safely convert the phpdoc to a strict type
                 continue;
