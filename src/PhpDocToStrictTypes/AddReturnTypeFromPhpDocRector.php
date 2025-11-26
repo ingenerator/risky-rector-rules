@@ -84,6 +84,10 @@ final class AddReturnTypeFromPhpDocRector extends AbstractRector
         $hasChanged = $this->returnTagRemover->removeReturnTagIfUseless($phpDocInfo, $node) || $hasChanged;
 
         if ($hasChanged) {
+            if ($node->name->toString() === '__construct') {
+                // prevent __construct return type - but still allow void return tag removal
+                $node->returnType = null;
+            }
             $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($node);
 
             return $node;
@@ -93,12 +97,7 @@ final class AddReturnTypeFromPhpDocRector extends AbstractRector
     }
 
     private function refactorReturnType(ClassMethod $node, PhpDocInfo $phpDocInfo): bool
-    {
-        if ($node->name->toString() === '__construct') {
-            // ignore constructors!
-            return false;
-        }
-        
+    {        
         if ($node->returnType instanceof Node) {
             // Already has a strict type
             return false;
