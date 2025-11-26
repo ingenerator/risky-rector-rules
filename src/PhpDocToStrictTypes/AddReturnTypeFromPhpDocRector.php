@@ -97,7 +97,7 @@ final class AddReturnTypeFromPhpDocRector extends AbstractRector
     }
 
     private function refactorReturnType(ClassMethod $node, PhpDocInfo $phpDocInfo): bool
-    {        
+    {
         if ($node->returnType instanceof Node) {
             // Already has a strict type
             return false;
