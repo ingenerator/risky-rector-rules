@@ -10,9 +10,10 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\Comments\NodeDocBlock\DocBlockUpdater;
+use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\DeadCode\PhpDoc\TagRemover\ReturnTagRemover;
 use Rector\Rector\AbstractRector;
-use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
 use function assert;
@@ -20,20 +21,29 @@ use function assert;
 /**
  * @see \tests\Rector\PhpDocToStrictTypes\AddReturnTypeFromPhpDocRectorTest
  */
-final class AddReturnTypeFromPhpDocRector extends AbstractRector
+final class AddReturnTypeFromPhpDocRector extends AbstractRector implements ConfigurableRectorInterface
 {
+    private AddMethodTypeConfig $addMethodTypeConfig;
+
     public function __construct(
         private readonly ReturnTagRemover $returnTagRemover,
         private readonly DocBlockUpdater $docBlockUpdater,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
         private readonly StrictTypeFromDocTypeFactory $typeFactory,
+        private readonly AddMethodTypeGuard $interfaceOnlyGuard,
     ) {
+        $this->addMethodTypeConfig = new AddMethodTypeConfig();
+    }
+
+    public function configure(array $configuration): void
+    {
+        $this->addMethodTypeConfig = AddMethodTypeConfig::fromRuleConfig($configuration);
     }
 
     public function getRuleDefinition(): RuleDefinition
     {
         return new RuleDefinition('Add strict return types to methods from phpdoc', [
-            new CodeSample(
+            new ConfiguredCodeSample(
                 <<<'CODE_SAMPLE'
                     class SomeClass
                     {
@@ -55,7 +65,7 @@ final class AddReturnTypeFromPhpDocRector extends AbstractRector
                 <<<'CODE_SAMPLE'
                     class SomeClass
                     {
-                        
+
                         public function run(): string
                         {
                         }
@@ -65,6 +75,9 @@ final class AddReturnTypeFromPhpDocRector extends AbstractRector
                         }
                     }
                     CODE_SAMPLE,
+                [
+                    AddMethodTypeConfig::INTERFACES_ONLY => false,
+                ]
             ),
         ]);
     }
@@ -77,6 +90,10 @@ final class AddReturnTypeFromPhpDocRector extends AbstractRector
     public function refactor(Node $node): ?Node
     {
         assert($node instanceof ClassMethod);
+
+        if ($this->interfaceOnlyGuard->shouldSkip($node, $this->addMethodTypeConfig)) {
+            return null;
+        }
 
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
 
