@@ -101,6 +101,10 @@ final class AddReturnTypeFromPhpDocRector extends AbstractRector implements Conf
         $hasChanged = $this->returnTagRemover->removeReturnTagIfUseless($phpDocInfo, $node) || $hasChanged;
 
         if ($hasChanged) {
+            if ($node->name->toString() === '__construct') {
+                // prevent __construct return type - but still allow void return tag removal
+                $node->returnType = null;
+            }
             $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($node);
 
             return $node;
