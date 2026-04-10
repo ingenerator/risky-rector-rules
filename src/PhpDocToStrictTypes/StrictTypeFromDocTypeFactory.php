@@ -36,6 +36,10 @@ final class StrictTypeFromDocTypeFactory
             return new Identifier('iterable');
         }
 
+        if ($phpDocType->isClassString()->yes()) {
+            return new Identifier('string');
+        }
+
         if ($phpDocType->isScalar()->yes()) {
             return new Identifier($phpDocType->describe(VerbosityLevel::getRecommendedLevelByType($phpDocType)));
         }
