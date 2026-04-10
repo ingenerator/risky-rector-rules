@@ -62,6 +62,21 @@ changes may be relatively safe. Relatively...!
 | AddPropertyTypeFromPhpDocRector | Adds strict return types to properties based on @var tags   |
 | AddReturnTypeFromPhpDocRector   | Adds strict return types to methods based on @return tags   |
 
+#### Only add types to interface methods
+
+By default, `AddParamTypeFromPhpDocRector` and `AddReturnTypeFromPhpDocRector` will add strict types to methods in
+all classes and interfaces.
+
+You can configure them to only modify interfaces by setting the `interfaces_only` option to `true`:
+
+```php
+use Ingenerator\RiskyRectorRules\PhpDocToStrictTypes\AddMethodTypeConfig;
+
+return RectorConfig::configure()
+    ->withConfiguredRule(AddParamTypeFromPhpDocRector::class, [AddMethodTypeConfig::INTERFACES_ONLY => true])
+    ->withConfiguredRule(AddReturnTypeFromPhpDocRector::class, [AddMethodTypeConfig::INTERFACES_ONLY => true]);
+```
+
 ## Support this library
 
 If you find this library useful, [please consider sponsoring my Open Source work](https://github.com/sponsors/acoulton).
