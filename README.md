@@ -81,6 +81,62 @@ return RectorConfig::configure()
     ->withConfiguredRule(AddReturnTypeFromPhpDocRector::class, [AddMethodTypeConfig::INTERFACES_ONLY => true]);
 ```
 
+### AddStrictTypes
+
+These rules add strict types based on runtime type information.
+
+#### AddParamTypeBasedOnParentClassMethodRector
+
+This rule adds strict types to method parameters based on the type of the parameter in a parent class or interface
+method. Types will not be added or changed if the parameter is already typed.
+
+This is similar to Rector's built-in `AddReturnTypeDeclarationBasedOnParentClassMethodRector` BUT it is risky. This is
+because classes are allowed to accept a wider type for method parameters than the parent class allows. Only run this
+rule if you want to enforce that child methods can only accept types that the parent class allows.
+
+For example, this code is both valid and works:
+
+```php
+class A {
+  public function print(string $a) {
+    echo $a;
+  }
+}
+
+class B extends A {
+{
+  public function print($a) {
+    echo $a ?? '{null}'
+  }
+}
+
+$b = new B();
+$b->print(null);
+```
+
+But this rule will change it to the following, which will break at runtime:
+
+```php
+class A {
+  public function print(string $a) {
+    echo $a;
+  }
+}
+
+class B extends A {
+{
+  public function print(string $a) {
+    echo $a ?? '{null}'
+  }
+}
+
+$b = new B();
+$b->print(null);
+```
+
+Therefore you should only use this rule if you *want* to lock down the types that a child class can accept, for example
+as part of a breaking release of a PHP library.
+
 ## Support this library
 
 If you find this library useful, [please consider sponsoring my Open Source work](https://github.com/sponsors/acoulton).
