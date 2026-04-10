@@ -39,6 +39,9 @@ return RectorConfig::configure()
       \Ingenerator\RiskyRectorRules\PhpDocToStrictTypes\AddParamTypeFromPhpDocRector::class,
       \Ingenerator\RiskyRectorRules\PhpDocToStrictTypes\AddPropertyTypeFromPhpDocRector::class,
       \Ingenerator\RiskyRectorRules\PhpDocToStrictTypes\AddReturnTypeFromPhpDocRector::class,
+      // We recommend running this rule in a *separate* commit, as it may add void returns to methods
+      // where the return type was accidentally undocumented.
+      \Ingenerator\RiskyRectorRules\PhpDocToStrictTypes\AddImplicitVoidInterfaceReturnTypeRector::class,
     ]);
 ```
 
@@ -56,11 +59,12 @@ If your project is a library, these rules are almost guaranteed to produce break
 If you have a reasonable level of phpstan coverage proving that the phpdoc types in your codebase are correct, these
 changes may be relatively safe. Relatively...!
 
-| Name                            | Purpose                                                     |
-|---------------------------------|-------------------------------------------------------------|
-| AddParamTypeFromPhpDocRector    | Adds strict types to method parameters based on @param tags |
-| AddPropertyTypeFromPhpDocRector | Adds strict return types to properties based on @var tags   |
-| AddReturnTypeFromPhpDocRector   | Adds strict return types to methods based on @return tags   |
+| Name                                     | Purpose                                                                 |
+|------------------------------------------|-------------------------------------------------------------------------|
+| AddParamTypeFromPhpDocRector             | Adds strict types to method parameters based on @param tags             |
+| AddPropertyTypeFromPhpDocRector          | Adds strict return types to properties based on @var tags               |
+| AddReturnTypeFromPhpDocRector            | Adds strict return types to methods based on @return tags               |
+| AddImplicitVoidInterfaceReturnTypeRector | Adds strict `void` types to interface methods with no documented return |
 
 #### Only add types to interface methods
 
