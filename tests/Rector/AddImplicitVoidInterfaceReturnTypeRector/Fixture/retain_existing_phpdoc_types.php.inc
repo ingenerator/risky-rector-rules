@@ -19,4 +19,11 @@ interface SomeInterface
      */
     public function method2();
 
+    /**
+     * We also don't modify `phpstan-return` methods
+     *
+     * @phpstan-return class-string
+     */
+    public function method3();
+
 }

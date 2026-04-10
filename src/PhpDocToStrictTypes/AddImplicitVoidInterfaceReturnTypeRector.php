@@ -105,6 +105,12 @@ final class AddImplicitVoidInterfaceReturnTypeRector extends AbstractRector
             return true;
         }
 
+        if ($phpDocInfo->hasByName('phpstan-return')) {
+            // Has a phpdoc @phpstan-return tag
+            // We don't do anything automatic with these
+            return true;
+        }
+
         return false;
     }
 }
