@@ -17,10 +17,11 @@ use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
+use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\DeadCode\PhpDoc\TagRemover\ParamTagRemover;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Rector\AbstractRector;
-use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
 use function assert;
@@ -31,19 +32,28 @@ use const true;
 /**
  * @see \tests\Rector\PhpDocToStrictTypes\AddParamTypeFromPhpDocRectorTest
  */
-final class AddParamTypeFromPhpDocRector extends AbstractRector
+final class AddParamTypeFromPhpDocRector extends AbstractRector implements ConfigurableRectorInterface
 {
+    private AddMethodTypeConfig $addMethodTypeConfig;
+
     public function __construct(
         private readonly ParamTagRemover $paramTagRemover,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
         private readonly StrictTypeFromDocTypeFactory $typeFactory,
+        private readonly AddMethodTypeGuard $addMethodTypeGuard,
     ) {
+        $this->addMethodTypeConfig = new AddMethodTypeConfig();
+    }
+
+    public function configure(array $configuration): void
+    {
+        $this->addMethodTypeConfig = AddMethodTypeConfig::fromRuleConfig($configuration);
     }
 
     public function getRuleDefinition(): RuleDefinition
     {
         return new RuleDefinition('Add strict types to method parameters from phpdoc', [
-            new CodeSample(
+            new ConfiguredCodeSample(
                 <<<'CODE_SAMPLE'
                     class SomeClass
                     {
@@ -67,6 +77,9 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
                         }
                     }
                     CODE_SAMPLE,
+                [
+                    AddMethodTypeConfig::INTERFACES_ONLY => false,
+                ]
             ),
         ]);
     }
@@ -79,6 +92,10 @@ final class AddParamTypeFromPhpDocRector extends AbstractRector
     public function refactor(Node $node): ?Node
     {
         assert($node instanceof ClassMethod);
+
+        if ($this->addMethodTypeGuard->shouldSkip($node, $this->addMethodTypeConfig)) {
+            return null;
+        }
 
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
         $hasChanged = $this->refactorParamTypes($node, $phpDocInfo);
