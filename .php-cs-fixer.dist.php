@@ -17,6 +17,7 @@ return new Config()
         // --- Initial set taken from Behat/Behat
         '@Symfony' => true,
         '@Symfony:risky' => true,
+        'declare_strict_types' => true,
         'concat_space' => false, // override Symfony
         'global_namespace_import' => [ //override Symfony
             'import_classes' => true,
