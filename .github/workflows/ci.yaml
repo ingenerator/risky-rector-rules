@@ -12,6 +12,8 @@ jobs:
       matrix:
         php_version:
           - '8.4'
+          - '8.5'
+          - '8.6'
         dependency-versions:
           - 'default'
           - 'lowest'
@@ -23,11 +25,11 @@ jobs:
           tools: composer:v2
           ini-file: 'development'
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           show-progress: false
 
-      - uses: ramsey/composer-install@v3
+      - uses: ramsey/composer-install@v4
         with:
           dependency-versions: ${{ matrix.dependency-versions }}
 
@@ -36,7 +38,7 @@ jobs:
   coding-standard:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2

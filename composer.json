@@ -25,8 +25,8 @@
     }
   ],
   "require": {
-    "php": ">=8.4 <8.5",
-    "rector/rector": "^2.3"
+    "php": ">=8.4 <8.7",
+    "rector/rector": "^2.8.4"
   },
   "require-dev": {
     "friendsofphp/php-cs-fixer": "^3.89",
